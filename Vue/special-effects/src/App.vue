@@ -1,16 +1,12 @@
 <template>
   <div id="app">
-    <cherryBlossoms/>
+    <router-view/>
   </div>
 </template>
 
 <script>
-import cherryBlossoms from './components/cherryBlossoms.vue'
 export default {
-  name: 'app',
-  components: {
-    cherryBlossoms
-  }
+  name:'App'
 }
 </script>
 

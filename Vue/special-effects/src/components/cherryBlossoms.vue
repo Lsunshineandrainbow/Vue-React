@@ -1,30 +1,33 @@
 <template>
-    <div class="warp">
-        <div class="pop" v-show="popFlag" @touchmove.prevent @click.stop></div>
-        <div class="pop-contain" v-show="popFlag">
+    <div class="warp" ref="warp">
+        <button @click="createDustImages">按钮</button>
+        <div class="pop" v-show="popFlag" >
+            <a href="" :src="url" :download="address"></a>
+        </div>
+        <div class="pop-contain" v-show="popFlag" ref="popContain">
             <div class="pop-img"></div>
-            <div class="poetry">
-                <ul class="poetry-right">
-                    <li>樱</li>
-                    <li>花</li>
-                    <li>落</li>
-                    <li>尽</li>
-                    <li>春</li>
-                    <li>将</li>
-                    <li>困</li>
-                </ul>
-                <ul class="poetry-left">
-                    <li>秋</li>
-                    <li>千</li>
-                    <li>架</li>
-                    <li>下</li>
-                    <li>归</li>
-                    <li>时</li>
-                </ul>
+                <div class="poetry">
+                    <ul class="poetry-right">
+                        <li>樱</li>
+                        <li>花</li>
+                        <li>落</li>
+                        <li>尽</li>
+                        <li>春</li>
+                        <li>将</li>
+                        <li>困</li>
+                    </ul>
+                    <ul class="poetry-left">
+                        <li>秋</li>
+                        <li>千</li>
+                        <li>架</li>
+                        <li>下</li>
+                        <li>归</li>
+                        <li>时</li>
+                    </ul>
             </div>
         </div>
-        <div class="main">
-            <div class="article-img article-img1">
+        <div class='main' :class="copy?'quickFade':''" ref="main">
+            <div class="article-img article-img1" style="filter: blur(2px);">
             </div>
             <div class="article-text">
                 <h2>日本人为什么喜欢<span @click="popOpen">樱花</span> ？</h2>
@@ -56,14 +59,18 @@
         </div>
     </div>
 </template>
-
 <script>
+    import html2canvas from 'html2canvas'
+    import Chance from '../assets/js/chance'
     export default {
         name: "cherryBlossoms",
 
         data(){
             return {
-                popFlag:false
+                popFlag:false,
+                address:0,
+                url:'',
+                copy:false
             }
         },
         methods:{
@@ -71,13 +78,92 @@
                 this.popFlag=true
             },
             createDustImages(){
+                let _this = this
+                // let chance = new  Chance(Math.random)
+                let dom = this.$refs.popContain
+                let domMain = this.$refs.main
+                domMain.setAttribute('class','quickFade')
+                console.log(dom)
+                html2canvas(domMain,{
+                    allowTaint: 0,
+                    useCORS: true,
+                    backgroundColor: ""
+                })
+                    .then(function(canvas){
+                     const canvasCount =20;
+                     const ctx=canvas.getContext("2d")
+                        _this.url = canvas.toDataURL()
+                        _this.address='ccc'+'.png'
+                        let width = domMain.offsetWidth
+                        let height= domMain.offsetWidth
+                        // _this.$refs.warp.appendChild(canvas)
+                        //getImageData(开始复制的x坐标，y坐标，width,height) 复制画布上指定矩形的像素数据
+                     const copyImg = ctx.getImageData(0,0,width,height)
+                    //获取像素信息 data是一个数组 存着用rgba表示的像素信息
+                     const pixelArry =copyImg.data
+                    //准备一个存储像素信息的透明图象数组
+                    const data = pixelArry.slice(0).fill(0)
+                    //将透明图象数组复制多个
+                     let  pixelArryCopy = Array.from({length:canvasCount},e=>data.slice(0)) //二维数组
+                    //进行随机赋值
+                    for(let i=0;i<pixelArry.length;i+=4){
+                        let a = pixelArryCopy[Math.floor(canvasCount*Math.random())];
+                        // console.log(canvasCount*Math.random())
+                        // debugger
+                        a[i] = pixelArry[i];
+                        a[i+1]=pixelArry[i+1];
+                        a[i+2]=pixelArry[i+2];
+                        a[i+3]=pixelArry[i+3]
+                    }
+                    for(let i=0;i<canvasCount;i++){
+                        const c = _this.newCanvasImage(
+                            pixelArryCopy[i], width,
 
+                            height
+                        )
+
+                        setTimeout(()=>{
+                            document.getElementsByClassName('warp')[0].appendChild(c)
+                            _this.animateTransform(c,100,-100,chance.integer({ min: -300, max: 600 }),2000)
+                            c.setAttribute('style',"z-index:100;position:absolute;top:0;left:0")
+                            _this.copy=true
+                        },0)
+                        setTimeout(()=>{
+                            c.remove(); // 删除元素
+                        },2050)
+                    }
+                })
+            },
+            newCanvasImage(canvasElem,width,height){
+                let canvas =document.createElement('canvas');
+                canvas.width=width;
+                canvas.height=height;
+                const tempCtx = canvas.getContext('2d')
+                //把每个像素放在画板上 putImageData(规定要放回画布的 ImageData 对象,相对于左上角x,y)
+                tempCtx.putImageData(new ImageData(canvasElem,width,height),0,0 )
+                return canvas
+            },
+            animateTransform(elem,sx,sy,angle,duration){
+                elem.animate([
+                    {transform:'rotate(0) translate(0,0)'},
+                    {transform:'rotate('+angle+"deg) translate("+sx+"px,"+sy+"px)"}
+                ],{
+                    duration:duration,
+                    easing:"ease-in",
+                },)
             }
         }
     }
 </script>
 <style scoped lang="scss">
     @import "../assets/css/font/font.css";
+    .dust {
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 1;
+        filter: blur(0.05em); // 模糊
+    }
     .warp{
         margin: 8px;
         width: 100%;
@@ -135,12 +221,14 @@
         background: rgba(251,198,218,.3);
     }
     .pop-contain{
-        z-index: 99999;
+        z-index: 11;
         position: fixed;
         width: 50%;
         padding-top: 100vh;
-        top: 60%;
+        /*top: 60%;*/
         left: 50%;
+        top: 40%;
+        height: 1000px;
         transform: translate(-50%, -50%);
     }
     .pop-img{
@@ -184,6 +272,11 @@
         animation-iteration-count:1;
         animation-fill-mode: forwards;
     }
+    .temp{
+        width: 200px;
+        height: 200px;
+        background: #282c34;
+    }
     @keyframes dropdown0 {
         0%{
             height: 0px;
@@ -225,6 +318,35 @@
         }
         100%{
             height: 730px;
+        }
+    }
+    .dust {
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 1;
+        filter: blur(0.05em); // 模糊
+    }
+    .quickFade{
+        animation: fadeout 1s linear forwards;
+    }
+    .fade{
+        animation: fadeblur 2s ease-in forwards;
+    }
+    @keyframes fadeout {
+        0%{
+            opacity: 1;
+        }
+        100%{
+            opacity: 0;
+        }
+    }
+    @keyframes fadeblur {
+        0%{
+            opacity: 0;
+        }
+        100%{
+            opacity:1;
         }
     }
 </style>
